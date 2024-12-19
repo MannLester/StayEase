@@ -65,7 +65,7 @@ export function HomePage() {
       if (user) {
         const accountDoc = await getDoc(doc(db, 'accounts', user.uid));
         if (accountDoc.exists()) {
-          setUserFavorites(accountDoc.data().favoriteDorms || []);
+          setUserFavorites(accountDoc.data().itemsSaved || []);
         }
       }
     });
@@ -179,19 +179,19 @@ export function HomePage() {
     try {
       const accountRef = doc(db, 'accounts', user.uid);
       const accountDoc = await getDoc(accountRef);
-      const currentFavorites = accountDoc.data()?.favoriteDorms || [];
+      const currentFavorites = accountDoc.data()?.itemsSaved || [];
       const isFavorited = currentFavorites.includes(itemId);
 
       if (isFavorited) {
         // Remove from favorites
         await updateDoc(accountRef, {
-          favoriteDorms: arrayRemove(itemId)
+          itemsSaved: arrayRemove(itemId)
         });
         setUserFavorites(prev => prev.filter(id => id !== itemId));
       } else {
         // Add to favorites
         await updateDoc(accountRef, {
-          favoriteDorms: arrayUnion(itemId)
+          itemsSaved: arrayUnion(itemId)
         });
         setUserFavorites(prev => [...prev, itemId]);
       }
@@ -219,7 +219,9 @@ export function HomePage() {
         profilePicUrl: user.photoURL || "",
         rating: 0,
         socials: {
-          Facebook: ""
+          Facebook: "",
+          Instagram: "",
+          X: ""
         },
         testField: "",
         username: user.displayName || user.email?.split('@')[0] || ""

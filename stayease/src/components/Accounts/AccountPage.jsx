@@ -10,7 +10,9 @@ const AccountPage = () => {
   const [editMode, setEditMode] = useState(false);
   const [editedData, setEditedData] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [favoriteDorms, setFavoriteDorms] = useState([]);
+  const [itemsSaved, setFavoriteDorms] = useState([]);
+  const [showOwnerOverlay, setShowOwnerOverlay] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -24,10 +26,10 @@ const AccountPage = () => {
           setEditedData(data);
 
           // Fetch favorite dorms data
-          if (data.favoriteDorms && data.favoriteDorms.length > 0) {
+          if (data.itemsSaved && data.itemsSaved.length > 0) {
             const propertiesRef = collection(db, 'properties');
             const favoriteProperties = await Promise.all(
-              data.favoriteDorms.map(async (propertyId) => {
+              data.itemsSaved.map(async (propertyId) => {
                 const propertyDoc = await getDoc(doc(propertiesRef, propertyId));
                 return propertyDoc.exists() ? { id: propertyDoc.id, ...propertyDoc.data() } : null;
               })
@@ -51,6 +53,23 @@ const AccountPage = () => {
       console.error('Error signing out:', error);
     }
   };
+
+  const handleApplyAsOwner = () => {
+    setShowOwnerOverlay(true);
+  };
+
+  const handleSubmitOwner = async () => {
+    try {
+      const accountRef = doc(db, 'accounts', user.uid);
+      await updateDoc(accountRef, { isOwner: true });
+      setUserData((prev) => ({ ...prev, isOwner: true }));
+      setShowOwnerOverlay(false);
+      navigate("/owner-page")
+    } catch (error) {
+      console.error('Error updating isOwner:', error);
+    }
+  };
+
 
   const handleEdit = () => {
     setEditMode(true);
@@ -141,6 +160,9 @@ const AccountPage = () => {
                   <button onClick={handleLogout} className="logout-button">
                     Logout
                   </button>
+                  <button onClick={handleApplyAsOwner} className="apply-button">
+                    Apply as Owner
+                  </button>
                 </>
               )}
             </div>
@@ -179,12 +201,12 @@ const AccountPage = () => {
             )}
           </div>
           <div className="info-group">
-            <label>Date Joined</label>
-            <p>{userData.dateJoined?.toDate().toLocaleDateString() || 'Not available'}</p>
+            <label>Account Type</label>
+            <p>{userData.isOwner ? 'Property Owner' : 'Regular User'}</p>
           </div>
           <div className="info-group">
-            <label>Rating</label>
-            <p>{userData.rating || '0'} ⭐</p>
+            <label>Date Joined</label>
+            <p>{userData.dateJoined?.toDate().toLocaleDateString() || 'Not available'}</p>
           </div>
         </div>
 
@@ -202,21 +224,58 @@ const AccountPage = () => {
                     placeholder="Enter Facebook profile URL"
                   />
                 </div>
+                <div className="social-input-group">
+                  <label>Instagram</label>
+                  <input
+                    type="text"
+                    value={editedData.socials.Instagram}
+                    onChange={(e) => handleSocialChange('Instagram', e.target.value)}
+                    placeholder="Enter Instagram profile URL"
+                  />
+                </div>
+                <div className="social-input-group">
+                  <label>X</label>
+                  <input
+                    type="text"
+                    value={editedData.socials.X}
+                    onChange={(e) => handleSocialChange('X', e.target.value)}
+                    placeholder="Enter X profile URL"
+                  />
+                </div>
               </div>
             ) : (
-              userData.socials.Facebook ? (
-                <div className="social-item">
-                  <span>Facebook: </span>
-                  <a href={userData.socials.Facebook} target="_blank" rel="noopener noreferrer">
-                    {userData.socials.Facebook}
-                  </a>
-                </div>
-              ) : (
-                <p>No social media accounts linked</p>
-              )
-            )}
+              <>
+        {userData.socials.Facebook && (
+          <div className="social-item">
+            <span>Facebook: </span>
+            <a href={userData.socials.Facebook} target="_blank" rel="noopener noreferrer">
+              {userData.socials.Facebook}
+            </a>
           </div>
-        </div>
+        )}
+        {userData.socials.Instagram && (
+          <div className="social-item">
+            <span>Instagram: </span>
+            <a href={userData.socials.Instagram} target="_blank" rel="noopener noreferrer">
+              {userData.socials.Instagram}
+            </a>
+          </div>
+        )}
+        {userData.socials.X && (
+          <div className="social-item">
+            <span>X: </span>
+            <a href={userData.socials.X} target="_blank" rel="noopener noreferrer">
+              {userData.socials.X}
+            </a>
+          </div>
+        )}
+        {(!userData.socials.Facebook && !userData.socials.Instagram && !userData.socials.X) && (
+          <p>No social media accounts linked</p>
+        )}
+      </>
+    )}
+  </div>
+  </div>
 
         <div className="account-section">
           <h2>Property Interests</h2>
@@ -233,18 +292,10 @@ const AccountPage = () => {
         </div>
 
         <div className="account-section">
-          <h2>Other Information</h2>
+          <h2>Contacts</h2>
           <div className="info-group">
             <label>Dashboard ID</label>
             <p>{userData.dashboardId || 'Not assigned'}</p>
-          </div>
-          <div className="info-group">
-            <label>Conversation ID</label>
-            <p>{userData.convoId || 'Not assigned'}</p>
-          </div>
-          <div className="info-group">
-            <label>Account Type</label>
-            <p>{userData.isOwner ? 'Property Owner' : 'Regular User'}</p>
           </div>
           {userData.comments?.length > 0 && (
             <div className="info-group">
@@ -261,8 +312,8 @@ const AccountPage = () => {
         <div className="account-section">
           <h3>Favorite Dorms</h3>
           <div className="favorite-dorms-grid">
-            {favoriteDorms.length > 0 ? (
-              favoriteDorms.map((dorm) => (
+            {itemsSaved.length > 0 ? (
+              itemsSaved.map((dorm) => (
                 <div key={dorm.id} className="favorite-dorm-card" onClick={() => navigate(`/property/${dorm.id}`)}>
                   <img 
                     src={dorm.propertyPhotos[0]} 
@@ -282,6 +333,61 @@ const AccountPage = () => {
             )}
           </div>
         </div>
+        
+        <div className="account-section">
+          <h3>Interested Dorms</h3>
+          <div className="favorite-dorms-grid">
+            {itemsSaved.length > 0 ? (
+              itemsSaved.map((dorm) => (
+                <div key={dorm.id} className="favorite-dorm-card" onClick={() => navigate(`/property/${dorm.id}`)}>
+                  <img 
+                    src={dorm.propertyPhotos[0]} 
+                    alt={dorm.propertyName} 
+                    className="favorite-dorm-image"
+                  />
+                  <div className="favorite-dorm-info">
+                    <h4>{dorm.propertyName}</h4>
+                    <p>{dorm.propertyLocation}</p>
+                    <p>{dorm.propertyType}</p>
+                    <p>₱{dorm.rent}/month</p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p>No interested dorms</p>
+            )}
+          </div>
+        </div>
+          
+        {showOwnerOverlay && (
+          <div className="modal-overlay">
+            <div className="modal-content">
+              <h3>Terms and Conditions for Becoming an Owner</h3>
+              <p>
+                {/* Placeholder text for terms and conditions */}
+                By applying as an owner, you agree to the terms and conditions set forth by our platform. 
+                Please ensure you understand your responsibilities and obligations as a property owner.
+              </p>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={agreedToTerms}
+                  onChange={() => setAgreedToTerms(!agreedToTerms)}
+                />
+                I agree to the terms and conditions
+              </label>
+              <div>
+                <button
+                  onClick={handleSubmitOwner}
+                  disabled={!agreedToTerms} // Disable if not checked
+                >
+                  Submit
+                </button>
+                <button onClick={() => setShowOwnerOverlay(false)}>Cancel</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
