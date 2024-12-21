@@ -9,6 +9,8 @@ interface FilterMenuProps {
     selectedPropertyType: string;
   }) => void;
   isLoading: boolean;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 

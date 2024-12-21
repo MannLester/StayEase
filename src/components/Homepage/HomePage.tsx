@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import './HomePage.css';
 import ItemsContext from './ItemsContext.jsx';
 import { FilterMenu } from './FilterMenu.jsx';
@@ -7,15 +7,16 @@ import { collection, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove, getDoc
 import { db } from '../../firebase/config.js';
 import { auth } from '../../firebase/config';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { User } from 'firebase/auth';
 import logoSvg from '../../assets/STAY.svg';
 
 export function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItem, setSelectedItem] = useState(null);
   const [isItemDetailsOpen, setIsItemDetailsOpen] = useState(false);
-  const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
-  const [properties, setProperties] = useState([]);
-  const [filteredProperties, setFilteredProperties] = useState([]);
+  // const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
+  const [properties, setProperties] = useState<{ id: string; [key: string]: any }[]>([]);
+  const [filteredProperties, setFilteredProperties] = useState<{ id: string; [key: string]: any }[]>([]);
   const [activeFilters, setActiveFilters] = useState({
     priceRange: { min: 0, max: 50000 },
     selectedTags: [],
@@ -23,12 +24,12 @@ export function HomePage() {
     selectedPropertyType: ''
   });
   const [showAuthOverlay, setShowAuthOverlay] = useState(false);
-  const [user, setUser] = useState(null);
-  const [userFavorites, setUserFavorites] = useState([]);
+  const [user, setUser] = useState<User | null>(null);
+  const [userFavorites, setUserFavorites] = useState<string[]>([]);
   const navigate = useNavigate();
-  const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  // const [isLogin, setIsLogin] = useState(true);
+  // const [email, setEmail] = useState('');
+  // const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -94,7 +95,7 @@ export function HomePage() {
       filtered = filtered.filter(property =>
         property.propertyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         property.propertyLocation.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        property.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        property.tags.some((tag: string) => tag.toLowerCase().includes(searchQuery.toLowerCase())) ||
         property.propertyType.toLowerCase().includes(searchQuery.toLowerCase()) ||
         property.owner.toLowerCase().includes(searchQuery.toLowerCase())
       );
@@ -144,7 +145,7 @@ export function HomePage() {
       const locationMatch = property.propertyLocation.toLowerCase().includes(query);
       
       // Search by tags
-      const tagMatch = property.tags.some(tag => 
+      const tagMatch = property.tags.some((tag: string) => 
         tag.toLowerCase().includes(query)
       );
       
@@ -164,17 +165,17 @@ export function HomePage() {
   }, [searchQuery, properties]);
 
   // Handle filter application
-  const handleApplyFilters = (filters) => {
+  const handleApplyFilters = (filters:any) => {
     setActiveFilters(filters);
   };
 
-  const handleItemClick = (itemId) => {
-    console.log('HomePage: Item clicked with id:', itemId);
-    setSelectedItem(itemId);
-    setIsItemDetailsOpen(true);
-  };
+  // const handleItemClick = (itemId:any) => {
+  //   console.log('HomePage: Item clicked with id:', itemId);
+  //   setSelectedItem(itemId);
+  //   setIsItemDetailsOpen(true);
+  // };
 
-  const handleFavorite = async (e, itemId) => {
+  const handleFavorite = async (e:any, itemId:any) => {
     e.stopPropagation();
     if (!user) {
       setShowAuthOverlay(true);
@@ -205,7 +206,7 @@ export function HomePage() {
     }
   };
 
-  const createUserDocument = async (user) => {
+  const createUserDocument = async (user:User) => {
     const accountRef = doc(db, 'accounts', user.uid);
     const accountSnap = await getDoc(accountRef);
 
@@ -256,11 +257,15 @@ export function HomePage() {
       await createUserDocument(result.user);
       handleSuccess();
     } catch (error) {
-      setError(error.message);
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError('An unexpected error occurred.');
+      }
     }
   };
 
-  const handleOverlayClick = (e) => {
+  const handleOverlayClick = (e:any) => {
     if (e.target.className === 'auth-overlay') {
       setShowAuthOverlay(false);
     }
