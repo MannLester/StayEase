@@ -12,7 +12,8 @@ import logoSvg from '../../assets/STAY.svg';
 
 export function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedItem, setSelectedItem] = useState(null);
+  // const [selectedItem, setSelectedItem] = useState(null);
+  const [selectedItem] = useState<any>(null);
   const [isItemDetailsOpen, setIsItemDetailsOpen] = useState(false);
   // const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
   const [properties, setProperties] = useState<{ id: string; [key: string]: any }[]>([]);
