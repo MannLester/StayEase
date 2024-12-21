@@ -1,9 +1,20 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import './FilterMenu.css';
 
-export function FilterMenu({ onApplyFilters, isLoading }) {
+interface FilterMenuProps {
+  onApplyFilters: (filters: {
+    priceRange: { min: number; max: number };
+    selectedTags: string[];
+    selectedLocation: string;
+    selectedPropertyType: string;
+  }) => void;
+  isLoading: boolean;
+}
+
+
+export function FilterMenu({ onApplyFilters, isLoading }: FilterMenuProps) {
   const [priceRange, setPriceRange] = useState({ min: 0, max: 50000 });
-  const [selectedTags, setSelectedTags] = useState([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedLocation, setSelectedLocation] = useState('');
   const [selectedPropertyType, setSelectedPropertyType] = useState('');
 
@@ -31,7 +42,7 @@ export function FilterMenu({ onApplyFilters, isLoading }) {
     'Student Housing'
   ];
 
-  const handleTagToggle = (tag) => {
+  const handleTagToggle = (tag: string) => {
     setSelectedTags(prev => 
       prev.includes(tag) 
         ? prev.filter(t => t !== tag)
