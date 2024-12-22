@@ -6,6 +6,7 @@ export function FilterMenu({ onApplyFilters, isLoading }) {
   const [selectedTags, setSelectedTags] = useState([]);
   const [selectedLocation, setSelectedLocation] = useState('');
   const [selectedPropertyType, setSelectedPropertyType] = useState('');
+  const [showAllTags, setShowAllTags] = useState(false);
 
   const tags = [
     'Pet Friendly',
@@ -13,7 +14,13 @@ export function FilterMenu({ onApplyFilters, isLoading }) {
     'With Security',
     'Near School',
     'With WiFi',
-    'Furnished'
+    'Furnished',
+    'With Kitchen',
+    'Near Market',
+    'Near Hospital',
+    'With AC',
+    'With Generator',
+    'Near Church'
   ];
 
   const locations = [
@@ -30,6 +37,9 @@ export function FilterMenu({ onApplyFilters, isLoading }) {
     'Boarding House',
     'Student Housing'
   ];
+
+  const initialTagsCount = 6;
+  const visibleTags = showAllTags ? tags : tags.slice(0, initialTagsCount);
 
   const handleTagToggle = (tag) => {
     setSelectedTags(prev => 
@@ -51,7 +61,7 @@ export function FilterMenu({ onApplyFilters, isLoading }) {
   if (isLoading) {
     return (
       <div className="filter-menu">
-        <h2>Filters</h2>
+        <div className="filter-title skeleton"></div>
         
         <div className="filter-section skeleton">
           <h3></h3>
@@ -117,7 +127,7 @@ export function FilterMenu({ onApplyFilters, isLoading }) {
       <div className="filter-section">
         <h3>Tags</h3>
         <div className="tags-grid">
-          {tags.map(tag => (
+          {visibleTags.map(tag => (
             <label key={tag} className="tag-checkbox">
               <input
                 type="checkbox"
@@ -128,6 +138,14 @@ export function FilterMenu({ onApplyFilters, isLoading }) {
             </label>
           ))}
         </div>
+        {tags.length > initialTagsCount && (
+          <button 
+            className="more-button"
+            onClick={() => setShowAllTags(!showAllTags)}
+          >
+            More {showAllTags ? '▲' : '▼'}
+          </button>
+        )}
       </div>
 
       {/* Location */}
