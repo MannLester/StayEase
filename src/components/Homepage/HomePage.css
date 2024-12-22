@@ -138,7 +138,7 @@ body {
 
 .properties-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 2rem;
 }
 
@@ -146,13 +146,15 @@ body {
   position: relative;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s;
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  background: white;
   cursor: pointer;
 }
 
 .property-card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-5px);
+  box-shadow: 0 4px 25px rgba(0, 0, 0, 0.15);
 }
 
 .property-placeholder {
@@ -167,47 +169,74 @@ body {
 }
 
 .favorite-button {
-  font-size: 24px;
   position: absolute;
   top: 12px;
   right: 12px;
-  background: white;
+  background: none;
   border: none;
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
+  padding: 0;
+  width: auto;
+  height: auto;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   z-index: 1;
+  font-size: 24px;
+  color: white;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.favorite-button:hover {
+  transform: scale(1.15);
 }
 
 .property-info {
-  padding: 14px;
+  padding: 16px;
   background: white;
 }
 
+.property-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
 .property-name {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #1a1a1a;
+}
+
+.property-rating {
   font-weight: 600;
-  font-size: 1rem;
-  margin-bottom: 8px;
+  font-size: 0.9rem;
+  color: #333;
+  background: #f8f8f8;
+  padding: 4px 8px;
+  border-radius: 6px;
 }
 
 .property-location {
   color: #666;
-  margin-bottom: 4px;
+  font-size: 0.95rem;
+  margin: 4px 0;
 }
 
 .property-type {
   color: #666;
+  font-size: 0.9rem;
   margin-bottom: 8px;
 }
 
 .property-price {
-  font-weight: 600;
-  color: #333;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #1a1a1a;
 }
 
 .no-results {
@@ -322,18 +351,20 @@ body {
 .homepage-layout {
   display: flex;
   gap: 2rem;
-  padding: 30px;
-  padding-left: 15px;
+  padding: 2rem 2rem 2rem 1rem;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .filters-sidebar {
-  width: 280px;
+  width: 300px;
   flex-shrink: 0;
   background: white;
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 1.2rem;
   height: fit-content;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .filters-sidebar h3 {
@@ -349,16 +380,39 @@ body {
 
 /* Skeleton styles for search and filters */
 .search-section.skeleton .search-bar {
-  background: #f6f7f8;
-  background: linear-gradient(to right, #f6f7f8 8%, #edeef1 18%, #f6f7f8 33%);
-  background-size: 2000px 100%;
-  animation: shimmer 2s infinite linear;
+  width: 100%;
+  height: 48px;
+  padding: 0.8rem;
+  border-radius: 12px;
   border: none;
-  color: transparent;
+  background: #f6f7f8;
+  background: linear-gradient(
+    to right,
+    #f6f7f8 8%,
+    #edeef1 18%,
+    #f6f7f8 33%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
 }
 
 .search-section.skeleton .search-icon {
-  display: none;
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #f6f7f8;
+  background: linear-gradient(
+    to right,
+    #f6f7f8 8%,
+    #edeef1 18%,
+    #f6f7f8 33%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
 }
 
 .filter-section.skeleton h3 {
@@ -397,4 +451,357 @@ body {
   animation: shimmer 2s infinite linear;
   border: none;
   color: transparent;
+}
+
+/* Navbar skeleton styles */
+.navbar.skeleton .nav-links span {
+  width: 80px;
+  height: 20px;
+  background: #f6f7f8;
+  background: linear-gradient(to right, #f6f7f8 8%, #edeef1 18%, #f6f7f8 33%);
+  background-size: 2000px 100%;
+  animation: shimmer 2s infinite linear;
+  border-radius: 4px;
+  color: transparent;
+}
+
+.navbar.skeleton .logo-image {
+  opacity: 0.5;
+  filter: grayscale(1);
+}
+
+.navbar.skeleton .language-switch {
+  width: 30px;
+  height: 20px;
+  background: #f6f7f8;
+  background: linear-gradient(to right, #f6f7f8 8%, #edeef1 18%, #f6f7f8 33%);
+  background-size: 2000px 100%;
+  animation: shimmer 2s infinite linear;
+  border-radius: 4px;
+  color: transparent;
+}
+
+.navbar.skeleton .user-icon {
+  background: #f6f7f8;
+  background: linear-gradient(to right, #f6f7f8 8%, #edeef1 18%, #f6f7f8 33%);
+  background-size: 2000px 100%;
+  animation: shimmer 2s infinite linear;
+  color: transparent;
+}
+
+/* Add these styles from ItemsContext.css */
+.property-card .verified-badge {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 2;
+}
+
+.property-card .next-button,
+.property-card .previous-button {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 2;
+  border: none;
+  font-size: 24px;
+}
+
+.property-card .next-button {
+  right: 20px;
+}
+
+.property-card .previous-button {
+  left: 20px;
+}
+
+.property-card .image-dots {
+  position: absolute;
+  bottom: 20px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  z-index: 2;
+}
+
+.property-card .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: white;
+  opacity: 0.5;
+}
+
+.property-card .dot.active {
+  opacity: 1;
+}
+
+.property-card .property-rating {
+  margin-top: 4px;
+  font-weight: bold;
+  color: #333;
+}
+
+/* Image viewer styles */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.9);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.image-viewer {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+}
+
+.image-viewer img {
+  max-width: 100%;
+  max-height: 90vh;
+  object-fit: contain;
+}
+
+.image-viewer .close-button {
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 32px;
+  cursor: pointer;
+  z-index: 1001;
+}
+
+.image-viewer .previous-button,
+.image-viewer .next-button {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.3);
+  border: none;
+  color: white;
+  font-size: 32px;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.image-viewer .previous-button:hover,
+.image-viewer .next-button:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.image-viewer .previous-button {
+  left: -60px;
+}
+
+.image-viewer .next-button {
+  right: -60px;
+}
+
+.image-viewer .image-dots {
+  position: absolute;
+  bottom: -30px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.image-viewer .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.image-viewer .dot.active {
+  background: white;
+}
+
+/* Image navigation styles */
+.property-card .image-navigation {
+  position: relative;
+  width: 100%;
+  height: 250px;
+}
+
+.property-card .nav-button {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 2;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.2s ease, visibility 0s ease, background-color 0.2s ease;
+  font-size: 20px;
+}
+
+.property-card:hover .nav-button {
+  visibility: visible;
+  opacity: 1;
+  transition: opacity 0.2s ease, visibility 0s ease, background-color 0.2s ease;
+}
+
+.property-card .nav-button.prev {
+  left: 10px;
+}
+
+.property-card .nav-button.next {
+  right: 10px;
+}
+
+.property-card .nav-button:hover {
+  background: white !important;
+  transform: translateY(-50%) scale(1.1);
+}
+
+.property-card .image-dots {
+  position: absolute;
+  bottom: 10px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  z-index: 2;
+}
+
+.property-card .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: white;
+  opacity: 0.7;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.property-card .dot.active {
+  opacity: 1;
+  transform: scale(1.2);
+}
+
+.property-card .property-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.sort-section {
+  margin-bottom: 1.5rem;
+}
+
+.sort-section h3 {
+  margin-bottom: 0.8rem;
+  font-size: 1rem;
+  color: #333;
+  font-weight: 600;
+}
+
+.sort-select {
+  width: 100%;
+  padding: 0.8rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background-color: white;
+  font-size: 0.95rem;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.sort-select:hover {
+  border-color: #999;
+}
+
+.sort-select:focus {
+  outline: none;
+  border-color: #666;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
+}
+
+.sort-section.skeleton .skeleton-title {
+  width: 40px;
+  height: 20px;
+  margin-bottom: 0.8rem;
+  background: #f6f7f8;
+  background: linear-gradient(to right, #f6f7f8 8%, #edeef1 18%, #f6f7f8 33%);
+  background-size: 2000px 100%;
+  animation: shimmer 2s infinite linear;
+  border-radius: 4px;
+}
+
+.sort-section.skeleton .skeleton-select {
+  width: 100%;
+  height: 45px;
+  background: #f6f7f8;
+  background: linear-gradient(to right, #f6f7f8 8%, #edeef1 18%, #f6f7f8 33%);
+  background-size: 2000px 100%;
+  animation: shimmer 2s infinite linear;
+  border-radius: 8px;
+}
+
+/* Regular search bar styles for comparison */
+.search-section:not(.skeleton) .search-bar {
+  width: 100%;
+  height: 48px;
+  padding: 0.8rem 2.5rem 0.8rem 1rem;
+  border-radius: 12px;
+  border: 1px solid #e0e0e0;
+  background: white;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.search-section:not(.skeleton) .search-bar:focus {
+  border-color: #666;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
+  outline: none;
 }
