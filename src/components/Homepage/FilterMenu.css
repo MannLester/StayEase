@@ -38,6 +38,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  margin-bottom: 0.5rem;
 }
 
 .tag-checkbox {
@@ -100,4 +101,39 @@ select {
 
 .apply-button:hover {
   background-color: #052746 !important;
+}
+
+.filter-title.skeleton {
+  width: 80px;
+  height: 28px;
+  margin-bottom: 1.5rem;
+  background: #f6f7f8;
+  background: linear-gradient(to right, #f6f7f8 8%, #edeef1 18%, #f6f7f8 33%);
+  background-size: 2000px 100%;
+  animation: shimmer 2s infinite linear;
+  border-radius: 4px;
+}
+
+.more-button {
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 8px;
+  color: #666;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+.more-button:hover {
+  background-color: #f5f5f5;
+}
+
+.more-button::after {
+  content: '';
+  display: inline-block;
+  margin-left: 4px;
 }
