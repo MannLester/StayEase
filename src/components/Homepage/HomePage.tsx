@@ -32,14 +32,16 @@ export function HomePage() {
   const [error, setError] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentImageIndex, setCurrentImageIndex] = useState({});
+  const [sortOption, setSortOption] = useState('popular');
 
   // Set up real-time listener for properties
   useEffect(() => {
     console.log('Setting up real-time listener for properties...');
     const propertiesCollection = collection(db, 'properties');
     
-    setIsLoading(true);
-    // Create real-time listener
+    setIsLoading(true); // Set loading to true when starting fetch
+    
     const unsubscribe = onSnapshot(propertiesCollection, (snapshot) => {
       console.log('Received database update:', snapshot.size, 'properties');
       const propertiesData = snapshot.docs.map(doc => ({
@@ -50,10 +52,10 @@ export function HomePage() {
       
       setProperties(propertiesData);
       setFilteredProperties(propertiesData);
-      setIsLoading(false);
+      setIsLoading(false); // Set loading to false when data is received
     }, (error) => {
       console.error('Error in real-time listener:', error);
-      setIsLoading(false);
+      setIsLoading(false); // Set loading to false on error
     });
 
     // Cleanup listener on component unmount
@@ -213,16 +215,14 @@ export function HomePage() {
       const accountData = {
         chatMates: {},
         convoId: "",
-        comments: [],
+        comments: [""],
         contactNumber: "",
         dashboardId: "",
         dateJoined: serverTimestamp(),
-        description: "",
         email: user.email || "",
-        followerCount: 0,
         isOwner: false,
-        itemsInterested: [],
-        itemsSaved: [],
+        itemsInterested: [""],
+        itemsSaved: [""],
         profilePicUrl: user.photoURL || "",
         rating: 0,
         socials: {
@@ -266,10 +266,56 @@ export function HomePage() {
     }
   };
 
+  const handleSort = (e) => {
+    const option = e.target.value;
+    setSortOption(option);
+    
+    let sorted = [...filteredProperties];
+    switch(option) {
+      case 'popular':
+        sorted.sort((a, b) => (b.likes?.length || 0) - (a.likes?.length || 0));
+        break;
+      case 'newest':
+        sorted.sort((a, b) => {
+          const dateA = a.dateAdded?.toDate() || new Date(0);
+          const dateB = b.dateAdded?.toDate() || new Date(0);
+          return dateB - dateA;
+        });
+        break;
+      case 'oldest':
+        sorted.sort((a, b) => {
+          const dateA = a.dateAdded?.toDate() || new Date(0);
+          const dateB = b.dateAdded?.toDate() || new Date(0);
+          return dateA - dateB;
+        });
+        break;
+      case 'price-low':
+        sorted.sort((a, b) => a.rent - b.rent);
+        break;
+      case 'price-high':
+        sorted.sort((a, b) => b.rent - a.rent);
+        break;
+      case 'top-rated':
+        sorted.sort((a, b) => (b.ratings?.overall || 0) - (a.ratings?.overall || 0));
+        break;
+    }
+    setFilteredProperties(sorted);
+  };
+
+  // Update useEffect to sort by most popular on initial load
+  useEffect(() => {
+    if (properties.length > 0) {
+      const sorted = [...properties].sort((a, b) => 
+        (b.likes?.length || 0) - (a.likes?.length || 0)
+      );
+      setFilteredProperties(sorted);
+    }
+  }, [properties]);
+
   return (
     <div className="homepage-container">
       {/* Navigation Bar */}
-      <nav className="navbar">
+      <nav className={`navbar ${isLoading ? 'skeleton' : ''}`}>
         <div className="logo">
           <Link to="/" onClick={() => {
             setSearchQuery('');
@@ -279,7 +325,7 @@ export function HomePage() {
               selectedLocation: '',
               selectedPropertyType: ''
             });
-          }}> 
+          }}>
             <img src={logoSvg} alt="StayEase Logo" className="logo-image" />
           </Link>
         </div>
@@ -295,9 +341,9 @@ export function HomePage() {
             className="user-icon" 
             onClick={() => {
               if (user) {
-                navigate('/account'); // Navigate to account page if user is logged in
+                navigate('/account');
               } else {
-                setShowAuthOverlay(true); // Open the auth overlay if not logged in
+                setShowAuthOverlay(true);
               }
             }} 
             role="button"
@@ -346,6 +392,33 @@ export function HomePage() {
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
           </div>
+
+          {/* Updated Sort Section with proper skeleton structure */}
+          <div className={`sort-section ${isLoading ? 'skeleton' : ''}`}>
+            {isLoading ? (
+              <>
+                <div className="skeleton-title"></div>
+                <div className="skeleton-select"></div>
+              </>
+            ) : (
+              <>
+                <h3>Sort</h3>
+                <select 
+                  value={sortOption}
+                  onChange={handleSort}
+                  className="sort-select"
+                >
+                  <option value="popular">Most Popular</option>
+                  <option value="newest">Newest</option>
+                  <option value="oldest">Oldest</option>
+                  <option value="price-low">Price: Low to High</option>
+                  <option value="price-high">Price: High to Low</option>
+                  <option value="top-rated">Top Rated</option>
+                </select>
+              </>
+            )}
+          </div>
+
           <FilterMenu 
             isOpen={true} 
             onClose={() => {}} 
@@ -381,22 +454,88 @@ export function HomePage() {
                 <div 
                   key={item.id} 
                   className="property-card"
-                  onClick={() => window.open(`/property/${item.id}`, '_blank')}
+                  onClick={() => handleItemClick(item.id)}
                 >
                   <div className="property-placeholder">
-                    <img 
-                      src={item.propertyPhotos[0]} 
-                      alt={item.propertyName} 
-                      className="property-image" 
-                    />
+                    <div className="image-navigation">
+                      {/* Previous Button */}
+                      {currentImageIndex[item.id] > 0 && (
+                        <button 
+                          className="nav-button prev"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCurrentImageIndex(prev => ({
+                              ...prev,
+                              [item.id]: prev[item.id] - 1
+                            }));
+                          }}
+                        >
+                          ‹
+                        </button>
+                      )}
+
+                      {/* Next Button */}
+                      {currentImageIndex[item.id] < (item.propertyPhotos.length - 1) && (
+                        <button 
+                          className="nav-button next"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCurrentImageIndex(prev => ({
+                              ...prev,
+                              [item.id]: (prev[item.id] || 0) + 1
+                            }));
+                          }}
+                        >
+                          ›
+                        </button>
+                      )}
+
+                      {/* Image */}
+                      <img 
+                        src={item.propertyPhotos[currentImageIndex[item.id] || 0]} 
+                        alt={item.propertyName} 
+                        className="property-image"
+                      />
+
+                      {/* Image Dots */}
+                      <div className="image-dots">
+                        {item.propertyPhotos.map((_, index) => (
+                          <div
+                            key={index}
+                            className={`dot ${index === (currentImageIndex[item.id] || 0) ? 'active' : ''}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCurrentImageIndex(prev => ({
+                                ...prev,
+                                [item.id]: index
+                              }));
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Verified Badge */}
+                    {item.verified && (
+                      <div className="verified-badge">
+                        <span className="icon">✓</span>
+                        <span>Verified</span>
+                      </div>
+                    )}
+
+                    {/* Favorite Button */}
                     <button 
                       className="favorite-button"
                       onClick={(e) => handleFavorite(e, item.id)}
                     >
                       {userFavorites.includes(item.id) ? '❤️' : '🤍'}
                     </button>
+
                     <div className="property-info">
-                      <div className="property-name">{item.propertyName}</div>
+                      <div className="property-header">
+                        <div className="property-name">{item.propertyName}</div>
+                        <div className="property-rating">★ {item.ratings?.overall || 'N/A'}</div>
+                      </div>
                       <div className="property-location">{item.propertyLocation}</div>
                       <div className="property-type">{item.propertyType}</div>
                       <div className="property-price">₱{item.rent.toLocaleString()}/month</div>
@@ -408,13 +547,6 @@ export function HomePage() {
           </div>
         </div>
       </div>
-
-      {/* Item Details Overlay */}
-      <ItemsContext
-        isOpen={isItemDetailsOpen}
-        onClose={() => setIsItemDetailsOpen(false)}
-        itemId={selectedItem}
-      />
 
       {showAuthOverlay && (
         <div className="auth-overlay" onClick={handleOverlayClick}>
