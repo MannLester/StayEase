@@ -3,10 +3,9 @@ import './HomePage.css';
 import ItemsContext from './ItemsContext.jsx';
 import { FilterMenu } from './FilterMenu.jsx';
 import { Link, useNavigate } from 'react-router-dom';
-import { collection, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../../firebase/config.js';
-import { auth } from '../../firebase/config';
-import { GoogleAuthProvider, signInWithPopup, User as FirebaseUser } from 'firebase/auth';
+import { useSupabaseAuth } from '../../hooks/useSupabaseAuth';
+import { User, RealtimeChannel } from '@supabase/supabase-js';
+import { supabase } from '../../supabase/supabaseClient';
 import logoSvg from '../../assets/STAY.svg';
 
 interface FilterType {
@@ -18,10 +17,8 @@ interface FilterType {
 
 export function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
-  // const [selectedItem, setSelectedItem] = useState<string | null>(null);
   const [selectedItem] = useState<string | null>(null);
   const [isItemDetailsOpen, setIsItemDetailsOpen] = useState(false);
-  // const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
   const [properties, setProperties] = useState<Array<{ id: string;[key: string]: any }>>([]);
   const [filteredProperties, setFilteredProperties] = useState<Array<{ id: string;[key: string]: any }>>([]);
   const [activeFilters, setActiveFilters] = useState<FilterType>({
@@ -31,72 +28,120 @@ export function HomePage() {
     selectedPropertyType: ''
   });
   const [showAuthOverlay, setShowAuthOverlay] = useState(false);
-  const [user, setUser] = useState<FirebaseUser| null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [userFavorites, setUserFavorites] = useState<string[]>([]);
   const navigate = useNavigate();
-  // const [isLogin, setIsLogin] = useState(true);
-  // const [email, setEmail] = useState('');
-  // // const [password, setPassword] = useState('');
-  // const [error, setError] = useState('');
   const [error] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  // const [sortBy, setSortBy] = useState('most-popular');
   const [sortBy] = useState('most-popular');
 
-  // Set up real-time listener for properties
+  const { user: supabaseUser, signInWithGoogle } = useSupabaseAuth();
+
+  useEffect(() => {
+    setUser(supabaseUser);
+    if (supabaseUser) {
+      const fetchUserFavorites = async () => {
+        const { data: accountData, error } = await supabase
+          .from('accounts')
+          .select('items_saved')
+          .eq('id', supabaseUser.id)
+          .single();
+        
+        if (error) {
+          console.error('Error fetching user favorites:', error);
+          return;
+        }
+        
+        setUserFavorites(accountData?.items_saved || []);
+      };
+      
+      fetchUserFavorites();
+    }
+  }, [supabaseUser]);
+
   useEffect(() => {
     console.log('Setting up real-time listener for properties...');
-    const propertiesCollection = collection(db, 'properties');
-    
     setIsLoading(true);
-    // Create real-time listener
-    const unsubscribe = onSnapshot(propertiesCollection, (snapshot) => {
-      console.log('Received database update:', snapshot.size, 'properties');
-      const propertiesData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      console.log('Updated properties data:', propertiesData);
+
+    // First, fetch all properties
+    const fetchProperties = async () => {
+      const { data, error } = await supabase
+        .from('properties')
+        .select('*');
       
-      setProperties(propertiesData);
-      setFilteredProperties(propertiesData);
-      setIsLoading(false);
-    }, (error) => {
-      console.error('Error in real-time listener:', error);
-      setIsLoading(false);
-    });
+      if (error) {
+        console.error('Error fetching properties:', error);
+        setIsLoading(false);
+        return;
+      }
 
-    // Cleanup listener on component unmount
-    return () => {
-      console.log('Cleaning up real-time listener...');
-      unsubscribe();
+      setProperties(data || []);
+      setFilteredProperties(data || []);
+      setIsLoading(false);
     };
-  }, []); // Empty dependency array means this only runs once on mount
 
-  // Set up auth listener and fetch user favorites
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
-      setUser(user);
-      if (user) {
-        const accountDoc = await getDoc(doc(db, 'accounts', user.uid));
-        if (accountDoc.exists()) {
-          setUserFavorites(accountDoc.data().itemsSaved || []);
+    fetchProperties();
+
+    // Then set up real-time listener using channel
+    const channel = supabase.channel('properties-channel')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'properties',
+        },
+        (payload) => {
+          console.log('Received INSERT:', payload);
+          setProperties(prev => [...prev, payload.new as any]);
+          setFilteredProperties(prev => [...prev, payload.new as any]);
         }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'properties',
+        },
+        (payload) => {
+          console.log('Received UPDATE:', payload);
+          const updateItem = (prev: any[]) => 
+            prev.map(item => item.id === (payload.new as any).id ? payload.new : item);
+          setProperties(updateItem);
+          setFilteredProperties(updateItem);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'properties',
+        },
+        (payload) => {
+          console.log('Received DELETE:', payload);
+          const deleteItem = (prev: any[]) => 
+            prev.filter(item => item.id !== (payload.old as any).id);
+          setProperties(deleteItem);
+          setFilteredProperties(deleteItem);
+        }
+      );
+
+    // Subscribe to the channel
+    channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        console.log('Subscribed to properties channel');
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      console.log('Cleaning up real-time listener...');
+      supabase.removeChannel(channel);
+    };
   }, []);
 
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      setUser(user);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  // Add sorting function
   const sortProperties = (properties:any, sortType:any) => {
     switch (sortType) {
       case 'most-popular':
@@ -116,11 +161,9 @@ export function HomePage() {
     }
   };
 
-  // Filter properties based on search and filters
   useEffect(() => {
     let filtered = [...properties];
 
-    // Apply search filter
     if (searchQuery) {
       filtered = filtered.filter(property =>
         property.propertyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -131,83 +174,39 @@ export function HomePage() {
       );
     }
 
-    // Apply price range filter
     filtered = filtered.filter(property =>
       property.propertyPrice >= activeFilters.priceRange.min &&
       property.propertyPrice <= activeFilters.priceRange.max
     );
 
-    // Apply location filter
     if (activeFilters.selectedLocation) {
       filtered = filtered.filter(property =>
         property.propertyLocation === activeFilters.selectedLocation
       );
     }
 
-    // Apply property type filter
     if (activeFilters.selectedPropertyType) {
       filtered = filtered.filter(property =>
         property.propertyType === activeFilters.selectedPropertyType
       );
     }
 
-    // Apply tags filter
     if (activeFilters.selectedTags.length > 0) {
       filtered = filtered.filter(property =>
         activeFilters.selectedTags.every(tag => property.propertyTags.includes(tag))
       );
     }
 
-    // Apply sorting
     filtered = sortProperties(filtered, sortBy);
 
     setFilteredProperties(filtered);
   }, [properties, searchQuery, activeFilters, sortBy]);
 
-  // Handle search functionality
-  useEffect(() => {
-    const query = searchQuery.toLowerCase().trim();
-    
-    if (!query) {
-      setFilteredProperties(properties);
-      return;
-    }
-
-    const filtered = properties.filter(property => {
-      // Search by location
-      const locationMatch = property.propertyLocation.toLowerCase().includes(query);
-      
-      // Search by tags
-      const tagMatch = property.propertyTags && Array.isArray(property.propertyTags) && property.propertyTags.some((tag: string) => 
-        tag.toLowerCase().includes(query)
-      );
-      
-      // Search by property name
-      const nameMatch = property.propertyName.toLowerCase().includes(query);
-      
-      // Search by property type
-      const typeMatch = property.propertyType.toLowerCase().includes(query);
-      
-      // Search by owner name
-      const ownerMatch = property.owner && typeof property.owner === 'string' && property.owner.toLowerCase().includes(query);
-
-      return locationMatch || tagMatch || nameMatch || typeMatch || ownerMatch;
-    });
-
-    setFilteredProperties(filtered);
-  }, [searchQuery, properties]);
-
   const handleFilterChange = (filters: FilterType) => {
     setActiveFilters(filters);
   };
 
-  // const handleItemClick = (itemId: string) => {
-  //   console.log('HomePage: Item clicked with id:', itemId);
-  //   setSelectedItem(itemId);
-  //   setIsItemDetailsOpen(true);
-  // };
-
-  const handleFavorite = async (e: React.MouseEvent<HTMLElement>, itemId: string, user: {uid: string}) => {
+  const handleFavorite = async (e: React.MouseEvent<HTMLElement>, itemId: string, user: User) => {
     e.stopPropagation();
     if (!user) {
       setShowAuthOverlay(true);
@@ -215,66 +214,71 @@ export function HomePage() {
     }
 
     try {
-      const accountRef = doc(db, 'accounts', user.uid);
-      const accountDoc = await getDoc(accountRef);
-      const currentFavorites = accountDoc.data()?.itemsSaved || [];
-      const isFavorited = currentFavorites.includes(itemId);
+      const { error: updateError } = await supabase
+        .from('accounts')
+        .upsert({
+          id: user.id,
+          items_saved: userFavorites.includes(itemId) 
+            ? userFavorites.filter(id => id !== itemId)
+            : [...userFavorites, itemId]
+        });
 
-      if (isFavorited) {
-        // Remove from favorites
-        await updateDoc(accountRef, {
-          itemsSaved: arrayRemove(itemId)
-        });
-        setUserFavorites(prev => prev.filter(id => id !== itemId));
-      } else {
-        // Add to favorites
-        await updateDoc(accountRef, {
-          itemsSaved: arrayUnion(itemId)
-        });
-        setUserFavorites(prev => [...prev, itemId]);
-      }
+      if (updateError) throw updateError;
+
+      setUserFavorites(prev => 
+        prev.includes(itemId) 
+          ? prev.filter(id => id !== itemId)
+          : [...prev, itemId]
+      );
     } catch (error) {
       console.error('Error updating favorites:', error);
     }
   };
 
-  interface User {
-    uid: string;
-  }
-
   const createUserDocument = async (user: User) => {
-    const accountRef = doc(db, 'accounts', user.uid);
-    const accountSnap = await getDoc(accountRef);
+    const { data: existingAccount, error: fetchError } = await supabase
+      .from('accounts')
+      .select()
+      .eq('id', user.id)
+      .single();
 
-    if (!accountSnap.exists()) {
+    if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 is "not found" error
+      console.error("Error checking existing account:", fetchError);
+      return;
+    }
+
+    if (!existingAccount) {
       const accountData = {
-        chatMates: {},
-        convoId: "",
+        id: user.id,
+        chat_mates: {},
+        convo_id: "",
         comments: [],
-        contactNumber: "",
-        dashboardId: "",
-        dateJoined: serverTimestamp(),
+        contact_number: "",
+        dashboard_id: "",
+        date_joined: new Date().toISOString(),
         description: "",
-        email: "",
-        followerCount: 0,
-        isOwner: false,
-        itemsInterested: [],
-        itemsSaved: [],
-        profilePicUrl: "",
+        email: user.email || "",
+        follower_count: 0,
+        is_owner: false,
+        items_interested: [],
+        items_saved: [],
+        profile_pic_url: "",
         rating: 0,
         socials: {
-          Facebook: "",
-          Instagram: "",
-          X: ""
+          facebook: "",
+          instagram: "",
+          x: ""
         },
-        testField: "",
+        test_field: "",
         username: ""
       };
 
-      try {
-        await setDoc(accountRef, accountData);
-      } catch (error) {
-        console.error("Error creating account document:", error);
+      const { error: insertError } = await supabase
+        .from('accounts')
+        .insert([accountData]);
+
+      if (insertError) {
+        console.error("Error creating account document:", insertError);
       }
     }
   };
@@ -288,16 +292,13 @@ export function HomePage() {
 
   const handleGoogleAuth = async () => {
     try {
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      await createUserDocument(result.user);
-      handleSuccess();
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        console.error(error.message);
-      } else {
-        console.error("An unknown error occurred");
+      await signInWithGoogle();
+      if (supabaseUser) {
+        await createUserDocument(supabaseUser);
       }
+      handleSuccess();
+    } catch (error) {
+      console.error("Error during Google authentication:", error);
     }
   };
 
@@ -345,14 +346,14 @@ export function HomePage() {
             aria-label="Account"
           >
             {user ? (
-              user.photoURL ? (
+              user.user_metadata?.avatar_url ? (
                 <img 
-                  src={user.photoURL} 
+                  src={user.user_metadata.avatar_url} 
                   alt="Profile" 
                   className="user-photo" 
                 />
               ) : (
-                user.displayName?.[0] || user.email?.[0] || '?'
+                user.email?.[0] || '?'
               )
             ) : (
               '👤'
@@ -368,7 +369,7 @@ export function HomePage() {
             <input
               type="text"
               className="search-bar"
-              placeholder="Search for your perfect stay..."
+              placeholder="Search for your perfect stay... "
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               disabled={isLoading}
@@ -467,7 +468,7 @@ export function HomePage() {
                 Successfully logged in!
               </div>
             ) : (
-              <>
+              < >
                 <button className="close-button" onClick={() => setShowAuthOverlay(false)} aria-label="Close">×</button>
                 <h2>Login</h2>
                 {error && <div className="error-message">{error}</div>}
@@ -475,7 +476,7 @@ export function HomePage() {
                 <button onClick={handleGoogleAuth} className="google-button">
                   Continue with Google
                 </button>
-              </>
+              </ >
             )}
           </div>
         </div>
