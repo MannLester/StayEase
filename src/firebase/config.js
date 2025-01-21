@@ -5,12 +5,12 @@ import { getStorage } from 'firebase/storage';
 
 // Your Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyDiii3HKZOuvvcYsEj_-GUprG5xFYwYpuU",
-  authDomain: "stayease-ca1cb.firebaseapp.com",
-  projectId: "stayease-ca1cb",
-  storageBucket: "stayease-ca1cb.firebasestorage.app",
-  messagingSenderId: "605023633613",
-  appId: "1:605023633613:web:b65a062054b5b5fbbd2984"
+  apiKey: "AIzaSyBSN8DnEh-2m3pBdngXs8UTgJZgaV9YTDw",
+  authDomain: "cardsofpower-2d60c.firebaseapp.com",
+  projectId: "cardsofpower-2d60c",
+  storageBucket: "cardsofpower-2d60c.firebasestorage.app",
+  messagingSenderId: "220041050268",
+  appId: "1:220041050268:android:1bf547ca44f139d5885559"
 };
 
 // Initialize Firebase
