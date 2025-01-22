@@ -352,6 +352,8 @@ export function HomePage() {
 
   interface User {
     uid: string;
+    email: string;
+    displayName: string;
   }
 
   const createUserDocument = async (user: User) => {
@@ -369,9 +371,10 @@ export function HomePage() {
         dashboardId: "",
         dateJoined: serverTimestamp(),
         description: "",
-        email: "",
+        email: user.email || "",
         followerCount: 0,
         isOwner: false,
+        isVerified: false,
         itemsInterested: [],
         itemsSaved: [],
         profilePicUrl: "",
@@ -381,8 +384,7 @@ export function HomePage() {
           Instagram: "",
           X: ""
         },
-        testField: "",
-        username: ""
+        username: user.displayName || ""
       };
 
       try {
