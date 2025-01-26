@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import './HomePage.css';
+import axios from 'axios';
 import ItemsContext from './ItemsContext.jsx';
 import { FilterMenu } from './FilterMenu.jsx';
 import { Link, useNavigate } from 'react-router-dom';
@@ -352,6 +353,9 @@ export function HomePage() {
 
   interface User {
     uid: string;
+    email: string;
+    displayName: string;
+    photoURL: string;
   }
 
   const createUserDocument = async (user: User) => {
@@ -369,7 +373,6 @@ export function HomePage() {
         dashboardId: "",
         dateJoined: serverTimestamp(),
         description: "",
-        email: "",
         followerCount: 0,
         isOwner: false,
         itemsInterested: [],
@@ -385,12 +388,41 @@ export function HomePage() {
         username: ""
       };
 
+      // try {
+      //   await setDoc(accountRef, accountData);
+
+      //   await client.connect();
+      //   const db = client.db(dbName);
+      //   const collection = db.collection(accountCollection);
+      //   await collection.insertOne({
+      //     uid: user.uid,
+      //     email: user.email ?? '',
+      //     displayName: user.displayName ?? '',
+      //     photoURL: user.photoURL ?? '',
+      //     ...accountData
+      //   });
+      // } catch (error) {
+      //   console.error("Error creating account document:", error);
+      // } finally {
+      //   await client.close();
+      // }
+
       try {
-        await setDoc(accountRef, accountData);
-      } catch (error) {
+        // Send a POST request to your backend to create the user document
+        const response = await axios.post('http://localhost:5000/api/accounts', {
+            uid: user.uid,
+            email: user.email ?? '',
+            displayName: user.displayName ?? '',
+            photoURL: user.photoURL ?? '',
+            ...accountData
+        });
+
+        console.log('User document created:', response.data);
+    } catch (error) {
         console.error("Error creating account document:", error);
-      }
     }
+    }
+    
   };
 
   const handleSuccess = () => {
